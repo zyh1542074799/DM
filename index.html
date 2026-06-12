@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>刀模管理系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #4F46E5;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --gray: #6B7280;
+            --bg: #F3F4F6;
+            --card: #FFFFFF;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+        }
+        
+        /* 头部 */
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(79, 70, 229, 0.3);
+        }
+        
+        .header h1 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .stat-item {
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            opacity: 0.9;
+        }
+        
+        /* 标签页 */
+        .tabs {
+            display: flex;
+            background: var(--card);
+            padding: 0 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .tab {
+            padding: 1rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            color: var(--gray);
+            font-weight: 500;
+        }
+        
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        /* 搜索栏 */
+        .search-bar {
+            padding: 1rem;
+            background: var(--card);
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .search-bar input, .search-bar select {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.75rem;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+        
+        /* 表格 */
+        .table-container {
+            padding: 1rem;
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            background: var(--card);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #E5E7EB;
+            font-size: 0.875rem;
+        }
+        
+        th {
+            background: #F9FAFB;
+            font-weight: 600;
+            color: var(--gray);
+            white-space: nowrap;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .status-free {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+        
+        .status-borrowed {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+        
+        .status-sample {
+            background: #E0E7FF;
+            color: #3730A3;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .actions button {
+            padding: 0.4rem 0.75rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        
+        .action-borrow {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+        
+        .action-return {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+        
+        .action-edit {
+            background: #F3F4F6;
+            color: #374151;
+        }
+        
+        .action-delete {
+            background: #FEE2E2;
+            color: #DC2626;
+        }
+        
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--card);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 1rem;
+            border-bottom: 1px solid #E5E7EB;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            font-size: 1.125rem;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray);
+        }
+        
+        .modal-body {
+            padding: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--gray);
+            font-size: 0.875rem;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+        
+        .modal-footer {
+            padding: 1rem;
+            border-top: 1px solid #E5E7EB;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+        
+        /* 上传区域 */
+        .upload-zone {
+            border: 2px dashed #E5E7EB;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .upload-zone:hover {
+            border-color: var(--primary);
+            background: #EEF2FF;
+        }
+        
+        .upload-zone input {
+            display: none;
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--gray);
+        }
+        
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1F2937;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 9999px;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 2000;
+        }
+        
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        /* 记录样式 */
+        .record-item {
+            background: var(--card);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .record-code {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .record-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        
+        .status-borrowed-bg {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+        
+        .status-returned-bg {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+        
+        .record-detail {
+            font-size: 0.875rem;
+            color: var(--gray);
+        }
+        
+        .record-time {
+            font-size: 0.75rem;
+            color: #9CA3AF;
+            margin-top: 0.25rem;
+        }
+        
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+        }
+        
+        .pagination button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #E5E7EB;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .pagination span {
+            color: var(--gray);
+            font-size: 0.875rem;
+        }
+        
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .table-container {
+                padding: 0.5rem;
+            }
+            
+            th, td {
+                padding: 0.5rem;
+                font-size: 0.75rem;
+            }
+            
+            .actions {
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+            
+            .actions button {
+                padding: 0.3rem 0.5rem;
+                font-size: 0.65rem;
+            }
+        }
+        
+        /* 隐藏 */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部 -->
+    <div class="header">
+        <h1>🔪 刀模管理系统</h1>
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="stat-total">0</div>
+                <div class="stat-label">总数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-free">0</div>
+                <div class="stat-label">空闲</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-borrowed">0</div>
+                <div class="stat-label">领用中</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-cuts">0</div>
+                <div class="stat-label">总裁切数</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 标签页 -->
+    <div class="tabs">
+        <div class="tab active" data-tab="list">刀模列表</div>
+        <div class="tab" data-tab="borrow">领用记录</div>
+        <div class="tab" data-tab="logs">操作日志</div>
+    </div>
+    
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+        <input type="text" id="search-input" placeholder="搜索编号、客户料号、备注...">
+        <select id="status-filter">
+            <option value="">全部状态</option>
+            <option value="空闲">空闲</option>
+            <option value="领用中">领用中</option>
+            <option value="样品">样品</option>
+        </select>
+        <button class="btn btn-primary" onclick="openAddModal()">+ 新增</button>
+        <button class="btn btn-outline" onclick="openUploadModal()">📤 导入</button>
+    </div>
+    
+    <!-- 刀模列表 -->
+    <div id="tab-list" class="tab-content">
+        <div class="table-container">
+            <table id="blade-table">
+                <thead>
+                    <tr>
+                        <th>编号</th>
+                        <th>客户料号</th>
+                        <th>尺寸</th>
+                        <th>角度</th>
+                        <th>穴数</th>
+                        <th>累计裁切</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="blade-tbody">
+                </tbody>
+            </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
+    </div>
+    
+    <!-- 领用记录 -->
+    <div id="tab-borrow" class="tab-content hidden">
+        <div class="table-container">
+            <div id="records-list"></div>
+        </div>
+    </div>
+    
+    <!-- 操作日志 -->
+    <div id="tab-logs" class="tab-content hidden">
+        <div class="table-container">
+            <div id="logs-list"></div>
+        </div>
+    </div>
+    
+    <!-- 新增/编辑刀模模态框 -->
+    <div class="modal" id="blade-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">新增刀模</h3>
+                <button class="modal-close" onclick="closeModal('blade-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="blade-id">
+                <div class="form-group">
+                    <label>编号 *</label>
+                    <input type="text" id="blade-code" placeholder="如: UC001">
+                </div>
+                <div class="form-group">
+                    <label>客户料号</label>
+                    <input type="text" id="blade-customer-code" placeholder="客户料号">
+                </div>
+                <div class="form-group">
+                    <label>裁切过的料号</label>
+                    <input type="text" id="blade-cut-codes" placeholder="裁切过的料号">
+                </div>
+                <div class="form-group">
+                    <label>规格</label>
+                    <input type="text" id="blade-spec" placeholder="规格">
+                </div>
+                <div class="form-group">
+                    <label>刀片类型</label>
+                    <input type="text" id="blade-type" placeholder="刀片类型">
+                </div>
+                <div class="form-group">
+                    <label>尺寸</label>
+                    <input type="number" step="0.1" id="blade-size" placeholder="尺寸">
+                </div>
+                <div class="form-group">
+                    <label>角度</label>
+                    <input type="text" id="blade-angle" placeholder="如: 15°">
+                </div>
+                <div class="form-group">
+                    <label>穴数</label>
+                    <input type="text" id="blade-hole-count" placeholder="如: 1穴">
+                </div>
+                <div class="form-group">
+                    <label>数量</label>
+                    <input type="number" id="blade-quantity" value="1">
+                </div>
+                <div class="form-group">
+                    <label>累计裁切数</label>
+                    <input type="number" id="blade-total-cuts" value="0">
+                </div>
+                <div class="form-group">
+                    <label>状态</label>
+                    <select id="blade-status">
+                        <option value="空闲">空闲</option>
+                        <option value="领用中">领用中</option>
+                        <option value="样品">样品</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>备注</label>
+                    <textarea id="blade-remark" rows="2" placeholder="备注信息"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('blade-modal')">取消</button>
+                <button class="btn btn-primary" onclick="saveBlade()">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 领用模态框 -->
+    <div class="modal" id="borrow-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>领用刀模</h3>
+                <button class="modal-close" onclick="closeModal('borrow-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="borrow-blade-id">
+                <p style="margin-bottom: 1rem;">刀模编号：<strong id="borrow-blade-code"></strong></p>
+                <div class="form-group">
+                    <label>领用人 *</label>
+                    <input type="text" id="borrower" placeholder="请输入领用人姓名">
+                </div>
+                <div class="form-group">
+                    <label>用途</label>
+                    <textarea id="purpose" rows="2" placeholder="领用用途（可选）"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('borrow-modal')">取消</button>
+                <button class="btn btn-primary" onclick="confirmBorrow()">确认领用</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 归还模态框 -->
+    <div class="modal" id="return-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>归还刀模</h3>
+                <button class="modal-close" onclick="closeModal('return-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="return-blade-id">
+                <p style="margin-bottom: 1rem;">刀模编号：<strong id="return-blade-code"></strong></p>
+                <div class="form-group">
+                    <label>本次使用裁切数</label>
+                    <input type="number" id="add-cuts" value="0" placeholder="本次使用增加裁切数">
+                    <small style="color: var(--gray);">归还时记录本次使用量</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('return-modal')">取消</button>
+                <button class="btn btn-success" onclick="confirmReturn()">确认归还</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 导入模态框 -->
+    <div class="modal" id="upload-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>导入Excel数据</h3>
+                <button class="modal-close" onclick="closeModal('upload-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-zone" onclick="document.getElementById('excel-file').click()">
+                    <input type="file" id="excel-file" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+                    <p style="color: var(--gray);">点击选择Excel文件</p>
+                    <p style="color: #9CA3AF; font-size: 0.75rem; margin-top: 0.5rem;">支持 .xlsx, .xls 格式</p>
+                    <p id="file-name" style="margin-top: 0.5rem; color: var(--primary);"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('upload-modal')">取消</button>
+                <button class="btn btn-primary" id="import-btn" onclick="importData()" disabled>开始导入</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        const API_BASE = '/api';
+        let currentPage = 1;
+        let pageSize = 20;
+        let selectedFile = null;
+        
+        // ============ 初始化 ============
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadBlades();
+            
+            // 标签页切换
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+            
+            // 搜索监听
+            document.getElementById('search-input').addEventListener('input', debounce(() => {
+                currentPage = 1;
+                loadBlades();
+            }, 300));
+            
+            document.getElementById('status-filter').addEventListener('change', () => {
+                currentPage = 1;
+                loadBlades();
+            });
+        });
+        
+        // ============ API 调用 ============
+        async function api(endpoint, options = {}) {
+            const res = await fetch(API_BASE + endpoint, {
+                headers: { 'Content-Type': 'application/json' },
+                ...options
+            });
+            return res.json();
+        }
+        
+        async function loadStats() {
+            const stats = await api('/stats');
+            document.getElementById('stat-total').textContent = stats.total || 0;
+            document.getElementById('stat-free').textContent = stats.free || 0;
+            document.getElementById('stat-borrowed').textContent = stats.borrowed || 0;
+            document.getElementById('stat-cuts').textContent = stats.total_cuts || 0;
+        }
+        
+        async function loadBlades() {
+            const search = document.getElementById('search-input').value;
+            const status = document.getElementById('status-filter').value;
+            
+            const params = new URLSearchParams();
+            if (search) params.append('search', search);
+            if (status) params.append('status', status);
+            
+            const blades = await api('/blades?' + params.toString());
+            
+            renderBlades(blades);
+        }
+        
+        async function loadRecords() {
+            const records = await api('/records');
+            renderRecords(records);
+        }
+        
+        async function loadLogs() {
+            const logs = await api('/logs');
+            renderLogs(logs);
+        }
+        
+        // ============ 渲染函数 ============
+        function renderBlades(blades) {
+            const tbody = document.getElementById('blade-tbody');
+            
+            if (blades.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm0-6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+                            <p>暂无刀模数据</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = blades.map(blade => {
+                const statusClass = blade.status === '空闲' ? 'status-free' : 
+                                   blade.status === '领用中' ? 'status-borrowed' : 'status-sample';
+                const borrowInfo = blade.borrow_info ? 
+                    `<br><small style="color:#92400E">${blade.borrow_info.borrower}</small>` : '';
+                
+                return `
+                    <tr>
+                        <td><strong>${blade.code}</strong></td>
+                        <td>${blade.customer_code || '-'}</td>
+                        <td>${blade.size || '-'}</td>
+                        <td>${blade.angle || '-'}</td>
+                        <td>${blade.hole_count || '-'}</td>
+                        <td>${blade.total_cuts || 0}</td>
+                        <td>
+                            <span class="status-badge ${statusClass}">${blade.status}</span>
+                            ${borrowInfo}
+                        </td>
+                        <td>
+                            <div class="actions">
+                                ${blade.status === '空闲' ? 
+                                    `<button class="action-borrow" onclick="openBorrowModal(${blade.id}, '${blade.code}')">领用</button>` :
+                                    blade.status === '领用中' ?
+                                    `<button class="action-return" onclick="openReturnModal(${blade.id}, '${blade.code}')">归还</button>` : ''
+                                }
+                                <button class="action-edit" onclick="openEditModal(${blade.id})">编辑</button>
+                                <button class="action-delete" onclick="deleteBlade(${blade.id}, '${blade.code}')">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function renderRecords(records) {
+            const container = document.getElementById('records-list');
+            
+            if (records.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无领用记录</div>';
+                return;
+            }
+            
+            container.innerHTML = records.map(r => `
+                <div class="record-item">
+                    <div class="record-header">
+                        <span class="record-code">${r.blade_code || '未知'}</span>
+                        <span class="record-status ${r.status === '领用中' ? 'status-borrowed-bg' : 'status-returned-bg'}">
+                            ${r.status}
+                        </span>
+                    </div>
+                    <div class="record-detail">
+                        领用人：${r.borrower} ${r.purpose ? '| ' + r.purpose : ''}
+                    </div>
+                    <div class="record-time">
+                        领用：${formatDate(r.borrow_date)} 
+                        ${r.return_date ? '| 归还：' + formatDate(r.return_date) : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function renderLogs(logs) {
+            const container = document.getElementById('logs-list');
+            
+            if (logs.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无操作日志</div>';
+                return;
+            }
+            
+            container.innerHTML = logs.map(log => `
+                <div class="record-item">
+                    <div class="record-header">
+                        <span class="record-code">${log.blade_code || '系统'}</span>
+                        <span class="record-status" style="background:#E0E7FF;color:#3730A3">
+                            ${log.operation}
+                        </span>
+                    </div>
+                    <div class="record-detail">${log.detail}</div>
+                    <div class="record-time">${formatDate(log.created_at)} | 操作人：${log.operator || '系统'}</div>
+                </div>
+            `).join('');
+        }
+        
+        // ============ 模态框操作 ============
+        function openAddModal() {
+            document.getElementById('modal-title').textContent = '新增刀模';
+            document.getElementById('blade-id').value = '';
+            document.getElementById('blade-form').reset();
+            document.getElementById('blade-modal').classList.add('active');
+        }
+        
+        async function openEditModal(id) {
+            document.getElementById('modal-title').textContent = '编辑刀模';
+            document.getElementById('blade-modal').classList.add('active');
+            
+            const blades = await api('/blades');
+            const blade = blades.find(b => b.id === id);
+            if (!blade) return;
+            
+            document.getElementById('blade-id').value = blade.id;
+            document.getElementById('blade-code').value = blade.code;
+            document.getElementById('blade-customer-code').value = blade.customer_code || '';
+            document.getElementById('blade-cut-codes').value = blade.cut_codes || '';
+            document.getElementById('blade-spec').value = blade.spec || '';
+            document.getElementById('blade-type').value = blade.blade_type || '';
+            document.getElementById('blade-size').value = blade.size || '';
+            document.getElementById('blade-angle').value = blade.angle || '';
+            document.getElementById('blade-hole-count').value = blade.hole_count || '';
+            document.getElementById('blade-quantity').value = blade.quantity || 1;
+            document.getElementById('blade-total-cuts').value = blade.total_cuts || 0;
+            document.getElementById('blade-status').value = blade.status;
+            document.getElementById('blade-remark').value = blade.remark || '';
+        }
+        
+        async function saveBlade() {
+            const id = document.getElementById('blade-id').value;
+            const data = {
+                code: document.getElementById('blade-code').value.trim(),
+                customer_code: document.getElementById('blade-customer-code').value.trim(),
+                cut_codes: document.getElementById('blade-cut-codes').value.trim(),
+                spec: document.getElementById('blade-spec').value.trim(),
+                blade_type: document.getElementById('blade-type').value.trim(),
+                size: parseFloat(document.getElementById('blade-size').value) || 0,
+                angle: document.getElementById('blade-angle').value.trim(),
+                hole_count: document.getElementById('blade-hole-count').value.trim(),
+                quantity: parseInt(document.getElementById('blade-quantity').value) || 1,
+                total_cuts: parseInt(document.getElementById('blade-total-cuts').value) || 0,
+                status: document.getElementById('blade-status').value,
+                remark: document.getElementById('blade-remark').value.trim()
+            };
+            
+            if (!data.code) {
+                showToast('请填写编号', 'error');
+                return;
+            }
+            
+            const res = id ? 
+                await api(`/blades/${id}`, { method: 'PUT', body: JSON.stringify(data) }) :
+                await api('/blades', { method: 'POST', body: JSON.stringify(data) });
+            
+            if (res.success) {
+                closeModal('blade-modal');
+                loadBlades();
+                loadStats();
+                showToast(id ? '更新成功' : '新增成功');
+            } else {
+                showToast(res.error || '操作失败', 'error');
+            }
+        }
+        
+        async function deleteBlade(id, code) {
+            if (!confirm(`确定要删除刀模 ${code} 吗？`)) return;
+            
+            const res = await api(`/blades/${id}`, { method: 'DELETE' });
+            if (res.success) {
+                loadBlades();
+                loadStats();
+                showToast('删除成功');
+            } else {
+                showToast(res.error || '删除失败', 'error');
+            }
+        }
+        
+        function openBorrowModal(id, code) {
+            document.getElementById('borrow-blade-id').value = id;
+            document.getElementById('borrow-blade-code').textContent = code;
+            document.getElementById('borrower').value = '';
+            document.getElementById('purpose').value = '';
+            document.getElementById('borrow-modal').classList.add('active');
+        }
+        
+        async function confirmBorrow() {
+            const blade_id = document.getElementById('borrow-blade-id').value;
+            const borrower = document.getElementById('borrower').value.trim();
+            const purpose = document.getElementById('purpose').value.trim();
+            
+            if (!borrower) {
+                showToast('请填写领用人', 'error');
+                return;
+            }
+            
+            const res = await api('/borrow', {
+                method: 'POST',
+                body: JSON.stringify({ blade_id, borrower, purpose })
+            });
+            
+            if (res.success) {
+                closeModal('borrow-modal');
+                loadBlades();
+                loadStats();
+                showToast('领用成功');
+            } else {
+                showToast(res.error || '领用失败', 'error');
+            }
+        }
+        
+        function openReturnModal(id, code) {
+            document.getElementById('return-blade-id').value = id;
+            document.getElementById('return-blade-code').textContent = code;
+            document.getElementById('add-cuts').value = '0';
+            document.getElementById('return-modal').classList.add('active');
+        }
+        
+        async function confirmReturn() {
+            const blade_id = document.getElementById('return-blade-id').value;
+            const add_cuts = parseInt(document.getElementById('add-cuts').value) || 0;
+            
+            const res = await api('/return', {
+                method: 'POST',
+                body: JSON.stringify({ blade_id, add_cuts })
+            });
+            
+            if (res.success) {
+                closeModal('return-modal');
+                loadBlades();
+                loadStats();
+                showToast('归还成功');
+            } else {
+                showToast(res.error || '归还失败', 'error');
+            }
+        }
+        
+        function openUploadModal() {
+            selectedFile = null;
+            document.getElementById('file-name').textContent = '';
+            document.getElementById('import-btn').disabled = true;
+            document.getElementById('upload-modal').classList.add('active');
+        }
+        
+        function handleFileSelect(event) {
+            selectedFile = event.target.files[0];
+            if (selectedFile) {
+                document.getElementById('file-name').textContent = selectedFile.name;
+                document.getElementById('import-btn').disabled = false;
+            }
+        }
+        
+        async function importData() {
+            if (!selectedFile) return;
+            
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            document.getElementById('import-btn').disabled = true;
+            document.getElementById('import-btn').textContent = '导入中...';
+            
+            try {
+                const res = await fetch(API_BASE + '/init-data', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    closeModal('upload-modal');
+                    loadBlades();
+                    loadStats();
+                    showToast(`导入成功：${data.imported} 条`);
+                } else {
+                    showToast(data.error || '导入失败', 'error');
+                }
+            } catch (e) {
+                showToast('导入失败', 'error');
+            }
+            
+            document.getElementById('import-btn').disabled = false;
+            document.getElementById('import-btn').textContent = '开始导入';
+        }
+        
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+        
+        // ============ 工具函数 ============
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            
+            if (tabName === 'borrow') loadRecords();
+            if (tabName === 'logs') loadLogs();
+        }
+        
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        }
+        
+        function debounce(fn, ms) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn(...args), ms);
+            };
+        }
+        
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.background = type === 'error' ? '#EF4444' : '#1F2937';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+    </script>
+</body>
+</html>
